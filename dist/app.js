@@ -12,12 +12,14 @@ const searchInput = document.querySelector("#product-search");
 const sortInput = document.querySelector("#product-sort");
 const clearFilters = document.querySelector("#clear-filters");
 const listCount = document.querySelector("#list-count");
+const listButton = document.querySelector(".list-button");
 const productDialog = document.querySelector("#product-dialog");
 const productDialogContent = document.querySelector("#product-dialog-content");
 const listDialog = document.querySelector("#list-dialog");
 const listDialogContent = document.querySelector("#list-dialog-content");
 let productOpener = null;
 let listOpener = null;
+const addFeedbackTimers = new WeakMap();
 
 function normalize(value) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -29,6 +31,54 @@ function money(amount) {
 
 function cartTotal() {
   return [...selection].reduce((total, [id, quantity]) => total + productById.get(id).price * quantity, 0);
+}
+
+function cartCount() {
+  return [...selection.values()].reduce((total, quantity) => total + quantity, 0);
+}
+
+function updateCartIndicator(animate = false) {
+  const count = cartCount();
+  listCount.textContent = String(count);
+  listButton.classList.toggle("has-items", count > 0);
+  if (animate) {
+    listButton.classList.remove("is-bumping");
+    void listButton.offsetWidth;
+    listButton.classList.add("is-bumping");
+  }
+  return count;
+}
+
+function setAddButtonState(button, id) {
+  const quantity = selection.get(id) || 0;
+  button.querySelector(".add-label").textContent = quantity ? `Agregar otro · ${quantity} en carrito` : "Agregar al carrito";
+  button.querySelector(".add-icon").textContent = "＋";
+  button.setAttribute("aria-label", `${quantity ? "Agregar otra unidad de" : "Agregar"} ${productById.get(id).name} al carrito`);
+}
+
+function syncAddButtons(except = null) {
+  document.querySelectorAll("[data-add]").forEach(button => {
+    if (button === except) return;
+    clearTimeout(addFeedbackTimers.get(button));
+    button.classList.remove("is-confirmed");
+    setAddButtonState(button, button.dataset.add);
+  });
+}
+
+function confirmAdd(button, id) {
+  if (!button) return;
+  clearTimeout(addFeedbackTimers.get(button));
+  button.classList.remove("is-confirmed");
+  void button.offsetWidth;
+  button.classList.add("is-confirmed");
+  button.querySelector(".add-label").textContent = "¡Agregado al carrito!";
+  button.querySelector(".add-icon").textContent = "✓";
+  button.setAttribute("aria-label", `${productById.get(id).name} agregado al carrito. Agregar otra unidad`);
+  addFeedbackTimers.set(button, setTimeout(() => {
+    if (!button.isConnected) return;
+    button.classList.remove("is-confirmed");
+    setAddButtonState(button, id);
+  }, 1200));
 }
 
 function orderText() {
@@ -102,9 +152,10 @@ function renderProducts() {
       </button>
       <div class="product-content"><div class="product-meta"><span>${categoryById.get(product.category).name}</span><span>${product.id}</span></div>
         <h3>${product.name}</h3><p>${product.description}</p>
-        <div class="product-bottom"><span><small>PRECIO DE EJEMPLO</small>${money(product.price)}</span><button type="button" class="add-button" data-add="${product.id}" aria-label="Agregar ${product.name} al carrito">Agregar al carrito <span aria-hidden="true">＋</span></button></div>
+        <div class="product-bottom"><span><small>PRECIO DE EJEMPLO</small>${money(product.price)}</span><button type="button" class="add-button" data-add="${product.id}"><span class="add-label"></span><span class="add-icon" aria-hidden="true">＋</span></button></div>
       </div>
     </article>`).join("");
+  syncAddButtons();
 }
 
 function setCategory(category) {
@@ -113,11 +164,12 @@ function setCategory(category) {
   renderProducts();
 }
 
-function addProduct(id) {
+function addProduct(id, button) {
   if (!productById.has(id)) return;
   selection.set(id, (selection.get(id) || 0) + 1);
-  const count = [...selection.values()].reduce((total, quantity) => total + quantity, 0);
-  listCount.textContent = String(count);
+  const count = updateCartIndicator(true);
+  confirmAdd(button, id);
+  syncAddButtons(button);
   document.querySelector("#action-status").textContent = `${productById.get(id).name} agregado al carrito. ${count} ${count === 1 ? "artículo" : "artículos"} en total.`;
   if (listDialog.open) {
     renderList();
@@ -135,9 +187,10 @@ function openProduct(id, opener) {
       <p class="detail-description">${product.description}</p><strong>Precio de ejemplo: ${money(product.price)}</strong>
       <ul>${product.details.map(detail => `<li>${detail}</li>`).join("")}</ul>
       <p class="detail-note">Ficha y precio ilustrativos. El negocio debe confirmar modelo, precio y disponibilidad.</p>
-      <button type="button" class="button button-dark" data-add="${product.id}">Agregar al carrito <span aria-hidden="true">＋</span></button>
+      <button type="button" class="button button-dark detail-add-button" data-add="${product.id}"><span class="add-label"></span><span class="add-icon" aria-hidden="true">＋</span></button>
       <p class="detail-feedback" role="status" aria-live="polite"></p>
     </div>`;
+  setAddButtonState(productDialogContent.querySelector("[data-add]"), id);
   productDialog.showModal();
   productDialog.querySelector(".dialog-close").focus();
 }
@@ -207,7 +260,7 @@ function resetFilters() {
 productGrid.addEventListener("click", event => {
   const add = event.target.closest("[data-add]");
   const view = event.target.closest("[data-view]");
-  if (add) addProduct(add.dataset.add);
+  if (add) addProduct(add.dataset.add, add);
   if (view) openProduct(view.dataset.view, view);
   if (event.target.closest("[data-reset]")) resetFilters();
 });
@@ -216,7 +269,7 @@ productDialog.addEventListener("click", event => {
   if (event.target.closest("[data-close-dialog]") || event.target === productDialog) productDialog.close();
   const add = event.target.closest("[data-add]");
   if (add) {
-    addProduct(add.dataset.add);
+    addProduct(add.dataset.add, add);
     productDialog.querySelector(".detail-feedback").textContent = "Agregado al carrito.";
   }
 });
@@ -241,12 +294,13 @@ listDialog.addEventListener("click", event => {
     const id = decrease.dataset.decrease;
     const next = (selection.get(id) || 0) - 1;
     if (next > 0) selection.set(id, next); else selection.delete(id);
-    listCount.textContent = String([...selection.values()].reduce((total, quantity) => total + quantity, 0));
+    updateCartIndicator();
     renderList();
+    syncAddButtons();
     (listDialogContent.querySelector(`[data-decrease="${id}"]`) || listDialog.querySelector(".dialog-close")).focus();
     return;
   }
-  if (event.target.closest("[data-clear-list]")) { selection.clear(); customerName = ""; listCount.textContent = "0"; renderList(); return; }
+  if (event.target.closest("[data-clear-list]")) { selection.clear(); customerName = ""; updateCartIndicator(); renderList(); syncAddButtons(); return; }
   const send = event.target.closest("#send-whatsapp");
   if (send) {
     const nameInput = listDialogContent.querySelector("#customer-name");
