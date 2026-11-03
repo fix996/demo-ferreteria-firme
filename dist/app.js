@@ -2,6 +2,7 @@ const categoryById = new Map(categories.map(category => [category.id, category])
 const productById = new Map(products.map(product => [product.id, product]));
 const selection = new Map();
 const state = { category: "todos", query: "", sort: "featured" };
+let customerName = "";
 
 const categoryGrid = document.querySelector("#category-grid");
 const filterRow = document.querySelector("#filter-row");
@@ -20,6 +21,35 @@ let listOpener = null;
 
 function normalize(value) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function money(amount) {
+  return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(amount);
+}
+
+function cartTotal() {
+  return [...selection].reduce((total, [id, quantity]) => total + productById.get(id).price * quantity, 0);
+}
+
+function orderText() {
+  return [
+    "PEDIDO DE EJEMPLO · Firme Ferretería",
+    `Nombre para retirar: ${customerName.trim()}`,
+    "",
+    ...[...selection].map(([id, quantity]) => {
+      const product = productById.get(id);
+      return `${quantity} × ${product.name} (${id}) — ${money(quantity * product.price)}`;
+    }),
+    "",
+    `Total ilustrativo: ${money(cartTotal())}`,
+    "¿Me confirman stock, precio final, horario y un código de retiro?",
+    "DEMO: no procesar este pedido."
+  ].join("\n");
+}
+
+function whatsappUrl() {
+  const number = /^\d{8,15}$/.test(store.whatsappNumber) ? store.whatsappNumber : "";
+  return `https://wa.me/${number}?text=${encodeURIComponent(orderText())}`;
 }
 
 function renderCategories() {
@@ -44,7 +74,8 @@ function matchingProducts() {
     return inCategory && inSearch;
   });
   if (state.sort === "name") matches.sort((a, b) => a.name.localeCompare(b.name, "es"));
-  if (state.sort === "category") matches.sort((a, b) => categoryById.get(a.category).name.localeCompare(categoryById.get(b.category).name, "es") || a.name.localeCompare(b.name, "es"));
+  if (state.sort === "price-asc") matches.sort((a, b) => a.price - b.price);
+  if (state.sort === "price-desc") matches.sort((a, b) => b.price - a.price);
   return matches;
 }
 
@@ -71,7 +102,7 @@ function renderProducts() {
       </button>
       <div class="product-content"><div class="product-meta"><span>${categoryById.get(product.category).name}</span><span>${product.id}</span></div>
         <h3>${product.name}</h3><p>${product.description}</p>
-        <div class="product-bottom"><span>Precio a consultar</span><button type="button" class="add-button" data-add="${product.id}" aria-label="Agregar ${product.name} a la lista">Sumar a mi lista <span aria-hidden="true">＋</span></button></div>
+        <div class="product-bottom"><span><small>PRECIO DE EJEMPLO</small>${money(product.price)}</span><button type="button" class="add-button" data-add="${product.id}" aria-label="Agregar ${product.name} al carrito">Agregar al carrito <span aria-hidden="true">＋</span></button></div>
       </div>
     </article>`).join("");
 }
@@ -87,7 +118,7 @@ function addProduct(id) {
   selection.set(id, (selection.get(id) || 0) + 1);
   const count = [...selection.values()].reduce((total, quantity) => total + quantity, 0);
   listCount.textContent = String(count);
-  document.querySelector("#action-status").textContent = `${productById.get(id).name} agregado a tu lista. ${count} ${count === 1 ? "artículo" : "artículos"} en total.`;
+  document.querySelector("#action-status").textContent = `${productById.get(id).name} agregado al carrito. ${count} ${count === 1 ? "artículo" : "artículos"} en total.`;
   if (listDialog.open) {
     renderList();
     listDialogContent.querySelector(`[data-increase="${id}"]`)?.focus();
@@ -101,35 +132,35 @@ function openProduct(id, opener) {
   productDialogContent.innerHTML = `
     <div class="detail-photo"><img src="${product.image}" alt="${product.name} ilustrativo" width="1536" height="1024"></div>
     <div class="detail-content"><p class="eyebrow">${categoryById.get(product.category).name} / ${product.id}</p><h2 id="product-dialog-title">${product.name}</h2>
-      <p class="detail-description">${product.description}</p><strong>Precio a consultar</strong>
+      <p class="detail-description">${product.description}</p><strong>Precio de ejemplo: ${money(product.price)}</strong>
       <ul>${product.details.map(detail => `<li>${detail}</li>`).join("")}</ul>
-      <p class="detail-note">Ficha ilustrativa. Confirmar modelo, precio y disponibilidad con la ferretería.</p>
-      <button type="button" class="button button-dark" data-add="${product.id}">Sumar a mi lista <span aria-hidden="true">＋</span></button>
+      <p class="detail-note">Ficha y precio ilustrativos. El negocio debe confirmar modelo, precio y disponibilidad.</p>
+      <button type="button" class="button button-dark" data-add="${product.id}">Agregar al carrito <span aria-hidden="true">＋</span></button>
       <p class="detail-feedback" role="status" aria-live="polite"></p>
     </div>`;
   productDialog.showModal();
   productDialog.querySelector(".dialog-close").focus();
 }
 
-function listText() {
-  return ["Consulta de ferretería (demo)", ...[...selection].map(([id, quantity]) => `${quantity} × ${productById.get(id).name} (${id})`), "Precios y disponibilidad a confirmar."].join("\n");
-}
-
 function renderList() {
   if (!selection.size) {
-    listDialogContent.innerHTML = `<div class="list-empty"><span aria-hidden="true">▤</span><h3>Tu lista está vacía.</h3><p>Explorá el catálogo y sumá los artículos por los que quieras consultar.</p><button type="button" class="button button-dark" data-go-catalog>Ir al catálogo <span aria-hidden="true">↗</span></button></div>`;
+    listDialogContent.innerHTML = `<div class="list-empty"><span aria-hidden="true">▤</span><h3>Tu carrito está vacío.</h3><p>Explorá el catálogo y agregá los artículos que necesitás.</p><button type="button" class="button button-dark" data-go-catalog>Ir al catálogo <span aria-hidden="true">↗</span></button></div>`;
     return;
   }
   listDialogContent.innerHTML = `
     <ul class="selection-items">${[...selection].map(([id, quantity]) => {
       const product = productById.get(id);
-      return `<li><img src="${product.image}" alt="" width="92" height="92"><div><strong>${product.name}</strong><span>${id} · Precio a consultar</span></div><div class="quantity"><button type="button" data-decrease="${id}" aria-label="Quitar una unidad de ${product.name}">−</button><span aria-label="${quantity} ${quantity === 1 ? "unidad" : "unidades"}">${quantity}</span><button type="button" data-increase="${id}" aria-label="Agregar una unidad de ${product.name}">+</button></div></li>`;
+      return `<li><img src="${product.image}" alt="" width="92" height="92"><div><strong>${product.name}</strong><span>${id} · ${money(product.price)} c/u · ${money(product.price * quantity)}</span></div><div class="quantity"><button type="button" data-decrease="${id}" aria-label="Quitar una unidad de ${product.name}">−</button><span aria-label="${quantity} ${quantity === 1 ? "unidad" : "unidades"}">${quantity}</span><button type="button" data-increase="${id}" aria-label="Agregar una unidad de ${product.name}">+</button></div></li>`;
     }).join("")}</ul>
-    <label class="copy-label" for="list-summary">Resumen para copiar</label><textarea id="list-summary" readonly rows="${Math.max(4, selection.size + 2)}"></textarea>
-    <p class="list-note">La demo no envía esta lista ni contacta a ninguna persona.</p>
-    <div class="list-actions"><button type="button" class="button button-dark" data-copy>Copiar resumen</button><button type="button" class="clear-list" data-clear-list>Vaciar lista</button></div>
+    <p class="cart-total"><span>Total ilustrativo</span><strong>${money(cartTotal())}</strong></p>
+    <label class="copy-label" for="customer-name">Nombre para retirar</label><input id="customer-name" type="text" minlength="2" maxlength="60" required placeholder="Ej.: Lautaro" autocomplete="name">
+    <p class="list-note">Cuando el negocio confirme, te dará un código de retiro por WhatsApp. Decí ese código al retirar; el local lo compara con su chat. Si va otra persona, avisá por el mismo chat. No hace falta DNI.</p>
+    <label class="copy-label" for="list-summary">Mensaje preparado</label><textarea id="list-summary" readonly rows="${Math.max(7, selection.size + 6)}"></textarea>
+    <p class="list-note">${store.whatsappNumber ? "Se abrirá el WhatsApp del negocio." : "En esta demo WhatsApp te dejará elegir un contacto. Al adaptar la web se configura el número del negocio."} Abrir WhatsApp no envía el mensaje automáticamente.</p>
+    <div class="list-actions"><a class="button button-dark" id="send-whatsapp" href="#" target="_blank" rel="noopener noreferrer">Abrir pedido en WhatsApp ↗</a><button type="button" class="clear-list" data-clear-list>Vaciar carrito</button></div>
     <p class="copy-feedback" role="status" aria-live="polite"></p>`;
-  listDialogContent.querySelector("#list-summary").value = listText();
+  listDialogContent.querySelector("#customer-name").value = customerName;
+  listDialogContent.querySelector("#list-summary").value = orderText();
 }
 
 function openList(opener) {
@@ -186,11 +217,17 @@ productDialog.addEventListener("click", event => {
   const add = event.target.closest("[data-add]");
   if (add) {
     addProduct(add.dataset.add);
-    productDialog.querySelector(".detail-feedback").textContent = "Agregado a tu lista de consulta.";
+    productDialog.querySelector(".detail-feedback").textContent = "Agregado al carrito.";
   }
 });
 productDialog.addEventListener("close", () => productOpener?.focus());
-listDialog.addEventListener("click", async event => {
+listDialog.addEventListener("input", event => {
+  if (event.target.id !== "customer-name") return;
+  customerName = event.target.value;
+  event.target.setCustomValidity("");
+  listDialogContent.querySelector("#list-summary").value = orderText();
+});
+listDialog.addEventListener("click", event => {
   if (event.target.closest("[data-go-catalog]")) {
     listDialog.close();
     document.querySelector("#catalogo").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
@@ -209,12 +246,19 @@ listDialog.addEventListener("click", async event => {
     (listDialogContent.querySelector(`[data-decrease="${id}"]`) || listDialog.querySelector(".dialog-close")).focus();
     return;
   }
-  if (event.target.closest("[data-clear-list]")) { selection.clear(); listCount.textContent = "0"; renderList(); return; }
-  if (event.target.closest("[data-copy]")) {
-    const summary = listDialogContent.querySelector("#list-summary");
-    const feedback = listDialogContent.querySelector(".copy-feedback");
-    try { await navigator.clipboard.writeText(summary.value); feedback.textContent = "Lista copiada. No se envió a nadie."; }
-    catch { summary.focus(); summary.select(); feedback.textContent = "No se pudo copiar automáticamente. Seleccioná el texto y copialo."; }
+  if (event.target.closest("[data-clear-list]")) { selection.clear(); customerName = ""; listCount.textContent = "0"; renderList(); return; }
+  const send = event.target.closest("#send-whatsapp");
+  if (send) {
+    const nameInput = listDialogContent.querySelector("#customer-name");
+    if (customerName.trim().length < 2) {
+      event.preventDefault();
+      nameInput.setCustomValidity("Escribí un nombre para identificar el pedido.");
+      nameInput.reportValidity();
+      nameInput.focus();
+      return;
+    }
+    send.href = whatsappUrl();
+    listDialogContent.querySelector(".copy-feedback").textContent = "WhatsApp se abrirá con el mensaje preparado; todavía tenés que elegir enviarlo.";
   }
 });
 listDialog.addEventListener("close", () => listOpener?.focus());

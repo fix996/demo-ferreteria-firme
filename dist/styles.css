@@ -101,6 +101,7 @@ h1, h2, h3, p { margin-top: 0; }
 .product-content p { min-height: 58px; margin-bottom: 20px; color: #67726a; font-size: .78rem; line-height: 1.5; }
 .product-bottom { display: grid; gap: 15px; padding-top: 16px; border-top: 1px solid #e0e5dc; }
 .product-bottom > span { color: #234939; font-size: .75rem; font-weight: 900; }
+.product-bottom > span small { display: block; margin-bottom: 5px; color: #67776c; font-size: .61rem; letter-spacing: .09em; }
 .add-button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 10px 11px; border: 1px solid #1d4737; background: #fff; color: #1d4737; font-size: .71rem; font-weight: 900; text-align: left; }
 .add-button:hover { background: #e2f0e4; }
 .add-button span { font-size: 1rem; font-weight: 400; }
@@ -164,10 +165,14 @@ dialog::backdrop { background: rgba(8,20,16,.76); }
 .quantity { display: flex; align-items: center; gap: 10px; }
 .quantity button { width: 28px; height: 28px; border: 1px solid #b9c6b9; background: #fff; font-size: 1rem; }
 .quantity span { min-width: 14px; font-size: .82rem; font-weight: 800; text-align: center; }
+.cart-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0 0 20px; padding: 15px 0; border-bottom: 1px solid #d5ddd2; font-size: .85rem; }
+.cart-total strong { color: #1d4737; font-size: 1.3rem; }
 .copy-label { display: block; margin-bottom: 9px; font-size: .75rem; font-weight: 900; }
+#customer-name { width: 100%; min-height: 42px; margin-bottom: 8px; padding: 9px 11px; border: 1px solid #bdc9bc; background: white; color: #273d2e; }
 #list-summary { width: 100%; min-height: 92px; resize: vertical; padding: 12px; border: 1px solid #bdc9bc; background: #fff; color: #273d2e; font-size: .77rem; line-height: 1.5; }
 .list-note, .copy-feedback { color: #647367; font-size: .73rem; line-height: 1.45; }
 .list-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; margin-top: 18px; }
+.list-actions .button { text-align: center; }
 .clear-list { padding: 9px 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: #6c5a4c; font-size: .76rem; font-weight: 800; }
 .copy-feedback { min-height: 18px; margin-bottom: 0; }
 
