@@ -2,6 +2,8 @@
 
 Sitio independiente con marca, artículos, imágenes y precios **ficticios**. El visitante busca productos, ajusta cantidades en el carrito y prepara un mensaje para WhatsApp. Abrir WhatsApp no envía el mensaje: la persona debe elegir enviarlo. No hay stock, pagos ni pedidos confirmados.
 
+Incluye una presentación del local con fotos ilustrativas, opiniones ficticias y un bloque de dirección, horarios y redes con datos pendientes. Reemplazar estos textos y enlaces solo con información verificada y autorizada por el negocio.
+
 Al agregar un artículo, el botón confirma brevemente la acción y luego muestra cuántas unidades hay en el carrito. El encabezado queda visible al desplazarse para que el acceso al carrito esté siempre a mano.
 
 ## Abrir y comprobar
