@@ -1,4 +1,29 @@
 @charset "UTF-8";
+.place-section { padding: 105px 0; background: #e6ebe2; }
+.place-heading { max-width: 720px; margin-bottom: 34px; }
+.place-heading h2, .visit-layout h2 { margin: 0 0 18px; font-size: clamp(2.4rem, 4.6vw, 4.6rem); line-height: 1.05; letter-spacing: -.055em; }
+.place-heading h2 span { color: #4a7058; }
+.place-heading > p:last-child, .visit-layout > div > p:last-child { max-width: 580px; color: #506058; line-height: 1.7; }
+.place-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.place-gallery figure { margin: 0; background: #f4f2eb; }
+.place-gallery img { width: 100%; height: clamp(250px, 32vw, 460px); object-fit: cover; }
+.place-gallery figcaption { padding: 16px 20px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.reviews-section { padding-top: 105px; padding-bottom: 105px; }
+.review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.review-grid blockquote { display: flex; flex-direction: column; min-height: 230px; margin: 0; padding: 28px; background: white; border-top: 4px solid #dc9d45; }
+.review-grid blockquote > span { color: #a35e27; letter-spacing: .2em; font-size: .85rem; }
+.review-grid blockquote p { margin: 26px 0; font-size: 1.1rem; font-weight: 700; line-height: 1.5; }
+.review-grid footer { margin-top: auto; color: #627168; font-size: .74rem; }
+.visit-section { padding: 95px 0; background: #dbe4d9; }
+.visit-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 7%; }
+.visit-card { padding: 34px; background: #f4f2eb; box-shadow: 0 20px 45px #17252212; }
+.visit-card > div { display: grid; gap: 8px; padding: 21px 0; border-bottom: 1px solid #ccd6cc; }
+.visit-card > div:first-child { padding-top: 0; }
+.visit-card > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.visit-card span { color: #a45e29; font-size: .68rem; font-weight: 800; letter-spacing: .14em; }
+.visit-card strong { font-size: 1.05rem; }
+.visit-card small { color: #637067; }
+@media (max-width: 760px) { .place-section, .reviews-section, .visit-section { padding-top: 70px; padding-bottom: 70px; } .place-gallery, .visit-layout { grid-template-columns: 1fr; } .review-grid { grid-template-columns: 1fr; } .review-grid blockquote { min-height: 0; } }
 :root { color-scheme: light; font-family: Arial, Helvetica, sans-serif; font-synthesis: none; scroll-behavior: smooth; }
 * { box-sizing: border-box; }
 html { scroll-padding-top: 110px; }
